@@ -8,7 +8,7 @@ app.secret_key = "nakhon_nayok_na_jai_secure_v4"
 
 DATA_FILE = "data.json"
 # --- แก้รหัสผ่าน Admin ตรงนี้ได้เลยครับ ---
-ADMIN_PASSWORD = "123ปลาฉลามขึ้นบก" 
+ADMIN_PASSWORD = "qwertyuiop[]asdfghjkl" 
 
 def load_data():
     if os.path.exists(DATA_FILE):
