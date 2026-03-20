@@ -4,7 +4,7 @@ import json
 import os
 
 app = Flask(__name__)
-app.secret_key = "nakhon_nayok_na_jai_2026_ultimate"
+app.secret_key = "nakhon_nayok_na_jai_2026_ultimate_v2"
 
 DATA_FILE = "data.json"
 ADMIN_PASSWORD = "qwertyuiop[]asdfghjkl" 
@@ -14,7 +14,6 @@ def load_data():
         try:
             with open(DATA_FILE, "r", encoding="utf-8") as f:
                 data = json.load(f)
-                # ตรวจสอบและเติมฟิลด์ที่จำเป็นถ้ายังไม่มี
                 if "names" not in data: data["names"] = []
                 if "assignments" not in data: data["assignments"] = {}
                 if "exclusions" not in data: data["exclusions"] = []
@@ -52,7 +51,7 @@ HTML_TEMPLATE = """
         <header class="text-center mb-10">
             <div class="inline-block p-2 px-4 bg-orange-500/10 border border-orange-500/20 rounded-full mb-4 text-orange-400 text-xs font-bold tracking-widest uppercase">Annual Trip 2026</div>
             <h1 class="text-4xl font-extrabold text-white mb-2">นครนายก <span class="text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-pink-500">นาใจ</span></h1>
-            <p class="text-slate-400 text-sm italic">"หาคนโดนแกง... ด้วยเสื้อที่คุณเลือกเอง"</p>
+            <p class="text-slate-400 text-sm italic">"ระบบสุ่มคนโดนแกง... แอดมินรู้ เพื่อนไม่รู้"</p>
         </header>
 
         <nav class="flex p-1.5 bg-slate-900/50 rounded-2xl border border-white/5 mb-8">
@@ -68,35 +67,58 @@ HTML_TEMPLATE = """
             {% if page == 'login' %}
                 <div class="text-center space-y-6 py-4">
                     <i data-lucide="lock" class="text-orange-500 w-12 h-12 mx-auto"></i>
-                    <h2 class="text-xl font-bold">เฉพาะแอดมินเท่านั้น</h2>
+                    <h2 class="text-xl font-bold">ยืนยันตัวตนแอดมิน</h2>
                     <form action="{{ url_for('admin_login') }}" method="POST" class="space-y-4">
-                        <input type="password" name="pw" placeholder="ระบุรหัสลับ" class="w-full bg-slate-950/50 border border-slate-700 rounded-2xl py-4 px-6 text-center text-white outline-none focus:ring-2 ring-orange-500/50 transition-all">
-                        <button type="submit" class="w-full py-4 btn-gradient rounded-2xl font-bold text-white uppercase">Unlock Access</button>
+                        <input type="password" name="pw" placeholder="รหัสผ่านแอดมิน" class="w-full bg-slate-950/50 border border-slate-700 rounded-2xl py-4 px-6 text-center text-white outline-none focus:ring-2 ring-orange-500/50">
+                        <button type="submit" class="w-full py-4 btn-gradient rounded-2xl font-bold text-white uppercase">ส่องความลับแก๊ง</button>
                     </form>
                 </div>
             {% elif page == 'admin' %}
                 <div class="space-y-8">
+                    <!-- รายชื่อการสุ่ม (แอดมินส่องได้ที่นี่!) -->
+                    <section class="p-5 bg-orange-500/5 rounded-3xl border border-orange-500/20">
+                        <h3 class="text-orange-400 text-xs font-bold uppercase mb-4 flex items-center gap-2"><i data-lucide="scroll-text" class="w-4 h-4"></i> โพยลับ: ใครแกงใคร?</h3>
+                        <div class="space-y-2">
+                            {% if assignments %}
+                                {% for giver, receiver in assignments.items() %}
+                                <div class="flex justify-between items-center bg-slate-900/40 p-3 rounded-xl border border-white/5 text-xs">
+                                    <span class="text-white font-bold">{{ giver }}</span>
+                                    <i data-lucide="arrow-right" class="w-3 h-3 text-slate-500"></i>
+                                    <span class="text-orange-400 font-bold">{{ receiver }} <span class="text-[10px] text-slate-500 font-normal">({{ sizes.get(receiver, '-') }})</span></span>
+                                </div>
+                                {% endfor %}
+                            {% else %}
+                                <p class="text-[10px] text-slate-500 text-center py-2 italic">ยังไม่มีใครกดสุ่มเลยจ้า...</p>
+                            {% endif %}
+                        </div>
+                        <div class="mt-4 pt-4 border-t border-white/5 text-center">
+                             <p class="text-[10px] text-slate-400">สุ่มไปแล้ว <span class="text-orange-500">{{ assignments|length }}</span> / {{ names|length }} คน</p>
+                        </div>
+                    </section>
+
                     <section>
-                        <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3">เพิ่มสมาชิกใหม่</label>
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3">เพิ่มเพื่อนใหม่</label>
                         <form action="{{ url_for('add_name') }}" method="POST" class="space-y-2">
-                            <input type="text" name="new_name" placeholder="ชื่อเล่นเพื่อน..." class="w-full bg-slate-950/50 border border-slate-800 rounded-xl px-4 py-3 text-white outline-none focus:border-orange-500" required>
+                            <input type="text" name="new_name" placeholder="ชื่อเล่น..." class="w-full bg-slate-950/50 border border-slate-800 rounded-xl px-4 py-3 text-white outline-none focus:border-orange-500" required>
                             <div class="flex gap-2">
-                                <input type="text" name="shirt_size" placeholder="Size เสื้อ (เช่น XL, 44...)" class="flex-1 bg-slate-950/50 border border-slate-800 rounded-xl px-4 py-3 text-white outline-none focus:border-orange-500">
-                                <button type="submit" class="bg-orange-600 px-6 rounded-xl text-white font-bold hover:bg-orange-500 transition-colors">เพิ่ม</button>
+                                <input type="text" name="shirt_size" placeholder="Size (XL, 42...)" class="flex-1 bg-slate-950/50 border border-slate-800 rounded-xl px-4 py-3 text-white outline-none focus:border-orange-500">
+                                <button type="submit" class="bg-orange-600 px-6 rounded-xl text-white font-bold">เพิ่ม</button>
                             </div>
                         </form>
                     </section>
+
                     <section>
-                        <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3">รายชื่อและไซส์เสื้อ ({{ names|length }})</label>
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3 text-right">รายชื่อสมาชิก ({{ names|length }})</label>
                         <div class="flex flex-wrap gap-2">
                             {% for name in names %}
                             <div class="bg-slate-800/40 border border-white/5 px-4 py-2 rounded-xl text-sm flex items-center gap-3">
-                                <span class="text-slate-200">{{ name }} <span class="text-orange-400 text-xs">({{ sizes.get(name, 'ไม่ระบุ') }})</span></span>
-                                <a href="{{ url_for('del_name', name=name) }}" class="text-rose-500 hover:scale-110 transition-all"><i data-lucide="trash-2" class="w-4 h-4"></i></a>
+                                <span class="text-slate-200">{{ name }} <span class="text-orange-400 text-xs">({{ sizes.get(name, '-') }})</span></span>
+                                <a href="{{ url_for('del_name', name=name) }}" class="text-rose-500"><i data-lucide="trash-2" class="w-4 h-4"></i></a>
                             </div>
                             {% endfor %}
                         </div>
                     </section>
+
                     <section class="p-5 bg-rose-500/5 rounded-3xl border border-rose-500/10">
                         <h3 class="text-rose-400 text-xs font-bold uppercase mb-4 flex items-center gap-2"><i data-lucide="shield-alert" class="w-4 h-4"></i> คู่ห้ามสุ่มโดนกัน</h3>
                         <form action="{{ url_for('add_exclusion') }}" method="POST" class="grid grid-cols-1 gap-3 mb-4">
@@ -117,12 +139,14 @@ HTML_TEMPLATE = """
                         </div>
                         {% endfor %}
                     </section>
+
                     <footer class="pt-6 border-t border-white/10 flex flex-col gap-4 text-center">
                         <a href="{{ url_for('logout') }}" class="text-[10px] text-slate-500 underline font-bold uppercase">LOGOUT ADMIN</a>
                         <a href="{{ url_for('reset') }}" class="py-3 px-6 bg-rose-950/30 border border-rose-500/20 text-rose-500 rounded-xl text-[10px] font-bold" onclick="return confirm('ล้างประวัติการสุ่มใหม่หมด?')">RESET ALL ASSIGNMENTS</a>
                     </footer>
                 </div>
             {% else %}
+                <!-- หน้าบ้านสำหรับเพื่อนๆ สุ่ม (UI เหมือนเดิม) -->
                 <div class="text-center py-4 space-y-8">
                     <div class="animate-float">
                         <div class="w-24 h-24 bg-gradient-to-br from-orange-500 to-pink-500 rounded-[2rem] flex items-center justify-center mx-auto rotate-12 shadow-2xl">
@@ -180,7 +204,12 @@ def index():
 def admin():
     if not session.get("is_admin"): return render_template_string(HTML_TEMPLATE, page='login')
     data = load_data()
-    return render_template_string(HTML_TEMPLATE, names=data["names"], exclusions=data["exclusions"], sizes=data.get("sizes", {}), page='admin')
+    return render_template_string(HTML_TEMPLATE, 
+                                names=data["names"], 
+                                exclusions=data["exclusions"], 
+                                sizes=data.get("sizes", {}), 
+                                assignments=data.get("assignments", {}), # เพิ่มตรงนี้
+                                page='admin')
 
 @app.route("/admin_login", methods=["POST"])
 def admin_login():
