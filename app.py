@@ -4,12 +4,12 @@ import json
 import os
 
 app = Flask(__name__)
-app.secret_key = "nakhon_nayok_na_jai_2026_ultimate_v9"
+app.secret_key = "nakhon_nayok_na_jai_2026_perfect_v10"
 
 DATA_FILE = "data.json"
 ADMIN_PASSWORD = "qwertyuiop[]asdfghjkl" 
 
-# ข้อมูลรายชื่อและไซส์เสื้อที่คุณให้มา (ฝังไว้ให้เลย!)
+# ข้อมูลรายชื่อและไซส์เสื้อ 18 คน
 INITIAL_MEMBERS = {
     "นิ๊ค": "40 - 42 นิ้ว",
     "พี่มิว": "44 - 46 นิ้ว",
@@ -37,19 +37,16 @@ def load_data():
             with open(DATA_FILE, "r", encoding="utf-8") as f:
                 data = json.load(f)
         except: 
-            data = {"names": [], "assignments": {}, "sizes": {}}
+            data = {"names": list(INITIAL_MEMBERS.keys()), "assignments": {}, "sizes": INITIAL_MEMBERS, "exclusions": []}
     else:
-        # ถ้ายังไม่มีไฟล์ ให้สร้างข้อมูลเริ่มต้น 18 คนทันที
-        data = {
-            "names": list(INITIAL_MEMBERS.keys()),
-            "assignments": {},
-            "sizes": INITIAL_MEMBERS
-        }
+        data = {"names": list(INITIAL_MEMBERS.keys()), "assignments": {}, "sizes": INITIAL_MEMBERS, "exclusions": []}
         save_data(data)
     
+    # ตรวจสอบฟิลด์ป้องกัน Error
     if "names" not in data: data["names"] = list(INITIAL_MEMBERS.keys())
     if "assignments" not in data: data["assignments"] = {}
     if "sizes" not in data: data["sizes"] = INITIAL_MEMBERS
+    if "exclusions" not in data: data["exclusions"] = []
     return data
 
 def save_data(data):
@@ -77,49 +74,67 @@ HTML_TEMPLATE = """
 <body class="p-4 md:p-8">
     <div class="max-w-md mx-auto">
         <header class="text-center mb-10">
-            <div class="inline-block p-2 px-4 bg-orange-500/10 border border-orange-500/20 rounded-full mb-4 text-orange-400 text-xs font-bold uppercase tracking-widest">Annual Trip 2026</div>
             <h1 class="text-4xl font-extrabold text-white mb-2">นครนายก <span class="text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-pink-500">นาใจ</span></h1>
-            <p class="text-slate-400 text-sm italic">"ความลับนี้ แอดมินก็ไม่รู้ใครสุ่มได้ใคร!"</p>
+            <p class="text-slate-400 text-sm italic">"สุ่มหาเหยื่อ (พร้อมไซส์เสื้อ) ฉบับแอดมินไม่รู้โพย"</p>
         </header>
 
         <nav class="flex p-1.5 bg-slate-900/50 rounded-2xl border border-white/5 mb-8">
-            <a href="{{ url_for('index') }}" class="flex-1 text-center py-3 rounded-xl text-sm font-semibold transition-all {{ 'bg-white/10 text-white shadow-lg' if page == 'index' else 'text-slate-500' }}">สุ่มหาเหยื่อ</a>
-            <a href="{{ url_for('admin') }}" class="flex-1 text-center py-3 rounded-xl text-sm font-semibold transition-all {{ 'bg-white/10 text-white shadow-lg' if page in ['admin', 'login'] else 'text-slate-500' }}">แอดมิน</a>
+            <a href="{{ url_for('index') }}" class="flex-1 text-center py-3 rounded-xl text-sm font-semibold transition-all {{ 'bg-white/10 text-white' if page == 'index' else 'text-slate-500' }}">สุ่มหาเหยื่อ</a>
+            <a href="{{ url_for('admin') }}" class="flex-1 text-center py-3 rounded-xl text-sm font-semibold transition-all {{ 'bg-white/10 text-white' if page in ['admin', 'login'] else 'text-slate-500' }}">แอดมิน</a>
         </nav>
 
         <main class="glass-card rounded-[2.5rem] p-8 relative">
             {% if page == 'login' %}
-                <div class="text-center space-y-6 py-4">
-                    <i data-lucide="lock" class="text-orange-500 w-12 h-12 mx-auto"></i>
-                    <h2 class="text-xl font-bold">แอดมินใส่รหัสด่วน</h2>
-                    <form action="{{ url_for('admin_login') }}" method="POST" class="space-y-4">
-                        <input type="password" name="pw" placeholder="รหัสผ่านแอดมิน" class="w-full bg-slate-950/50 border border-slate-700 rounded-2xl py-4 px-6 text-center text-white outline-none focus:ring-2 ring-orange-500/50">
-                        <button type="submit" class="w-full py-4 btn-gradient rounded-2xl font-bold text-white">เข้าสู่ระบบ</button>
-                    </form>
-                </div>
+                <form action="{{ url_for('admin_login') }}" method="POST" class="space-y-4 py-4 text-center">
+                    <i data-lucide="lock" class="text-orange-500 w-12 h-12 mx-auto mb-4"></i>
+                    <h2 class="text-xl font-bold">แอดมินยืนยันตัวตน</h2>
+                    <input type="password" name="pw" placeholder="รหัสผ่าน" class="w-full bg-slate-950/50 border border-slate-700 rounded-2xl py-4 px-6 text-center text-white outline-none focus:ring-2 ring-orange-500/50">
+                    <button type="submit" class="w-full py-4 btn-gradient rounded-2xl font-bold text-white">เข้าสู่ระบบ</button>
+                </form>
             {% elif page == 'admin' %}
                 <div class="space-y-8">
                     <section class="text-center p-6 bg-orange-500/10 rounded-3xl border border-orange-500/20">
-                         <p class="text-orange-400 text-xs font-bold uppercase mb-2 tracking-widest">สรุปสถานะการสุ่ม</p>
-                         <p class="text-white text-sm font-light">มีคนสุ่มไปแล้ว</p>
-                         <p class="text-5xl font-black text-white my-2">{{ assignments|length }} <span class="text-xl text-slate-500">/ {{ names|length }}</span></p>
-                         <p class="text-[10px] text-slate-500 italic mt-4">"โพยลับถูกทำลายแล้ว แอดมินส่องไม่ได้จ้า"</p>
+                         <p class="text-white text-sm">สุ่มไปแล้ว <span class="text-4xl font-black">{{ assignments|length }}</span> / {{ names|length }} คน</p>
                     </section>
 
-                    <section>
-                        <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3">รายชื่อและ Size เสื้อทั้งหมด</label>
-                        <div class="space-y-2 max-h-60 overflow-y-auto pr-2">
-                            {% for name in names | sort %}
-                            <div class="bg-slate-900/50 border border-white/5 p-3 rounded-xl flex justify-between items-center">
-                                <span class="text-sm text-white">{{ name }}</span>
-                                <span class="text-xs text-orange-400 font-bold">{{ sizes.get(name, '-') }}</span>
+                    <section class="p-5 bg-rose-500/5 rounded-3xl border border-rose-500/10">
+                        <h3 class="text-rose-400 text-xs font-bold uppercase mb-4 flex items-center gap-2"><i data-lucide="shield-alert" class="w-4 h-4"></i> ล็อคคู่ห้ามสุ่มโดนกัน</h3>
+                        <form action="{{ url_for('add_exclusion') }}" method="POST" class="space-y-3">
+                            <div class="grid grid-cols-2 gap-2">
+                                <select name="p1" class="bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-white">
+                                    {% for name in names | sort %}<option value="{{ name }}">{{ name }}</option>{% endfor %}
+                                </select>
+                                <select name="p2" class="bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-white">
+                                    {% for name in names | sort %}<option value="{{ name }}">{{ name }}</option>{% endfor %}
+                                </select>
+                            </div>
+                            <button type="submit" class="w-full bg-rose-600 text-white py-3 rounded-xl text-xs font-bold uppercase">เพิ่มกฎห้ามคู่กัน</button>
+                        </form>
+                        <div class="mt-4 space-y-1">
+                            {% for pair in exclusions %}
+                            <div class="flex justify-between items-center bg-slate-900/50 p-2 rounded-xl text-[10px] text-slate-400">
+                                <span>{{ pair[0] }} ❌ {{ pair[1] }}</span>
+                                <a href="{{ url_for('del_exclusion', idx=loop.index0) }}" class="text-rose-500"><i data-lucide="x" class="w-3 h-3"></i></a>
                             </div>
                             {% endfor %}
                         </div>
                     </section>
 
-                    <footer class="pt-6 border-t border-white/10 text-center">
-                        <a href="{{ url_for('reset') }}" class="text-rose-500 text-[10px] font-bold uppercase underline" onclick="return confirm('ล้างข้อมูลการสุ่มใหม่หมด?')">ล้างประวัติการสุ่ม (Reset)</a>
+                    <section>
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3">รายชื่อและ Size เสื้อทั้งหมด</label>
+                        <div class="space-y-2 max-h-48 overflow-y-auto pr-2">
+                            {% for name in names | sort %}
+                            <div class="bg-slate-900/50 border border-white/5 p-3 rounded-xl flex justify-between items-center text-xs">
+                                <span class="text-white">{{ name }}</span>
+                                <span class="text-orange-400 font-bold">{{ sizes.get(name, '-') }}</span>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </section>
+
+                    <footer class="pt-6 border-t border-white/10 text-center flex flex-col gap-4">
+                        <a href="{{ url_for('logout') }}" class="text-slate-500 text-[10px] uppercase underline">LOGOUT</a>
+                        <a href="{{ url_for('reset') }}" class="text-rose-500 text-[10px] font-bold uppercase underline" onclick="return confirm('ล้างข้อมูลใหม่หมด?')">ล้างประวัติ (Reset All)</a>
                     </footer>
                 </div>
             {% else %}
@@ -134,7 +149,7 @@ HTML_TEMPLATE = """
                                 {% endfor %}
                             </select>
                         </div>
-                        <button type="submit" class="w-full py-6 rounded-3xl font-black text-2xl btn-gradient text-white shadow-2xl italic">สุ่มหาเหยื่อ!</button>
+                        <button type="submit" class="w-full py-6 rounded-3xl font-black text-2xl btn-gradient text-white shadow-2xl">สุ่มหาเหยื่อ!</button>
                     </form>
                 </div>
             {% endif %}
@@ -144,30 +159,16 @@ HTML_TEMPLATE = """
     {% if result %}
     <div class="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-950/95 backdrop-blur-xl">
         <div class="glass-card w-full max-w-sm p-10 rounded-[3rem] border-2 border-orange-500/50 text-center space-y-8">
-            <header>
-                <div class="w-16 h-16 bg-orange-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <i data-lucide="target" class="text-orange-500 w-8 h-8"></i>
-                </div>
-                <p class="text-slate-400 text-xs italic">เหยื่อที่มึงต้องไปหาชุดมาแกงคือ...</p>
-            </header>
-            
+            <p class="text-slate-400 text-xs italic">เหยื่อที่มึงต้องไปหาชุดมาแกงคือ...</p>
             <div>
                 <h2 class="text-6xl font-black text-white tracking-tighter">{{ result }}</h2>
-                <div class="mt-4 px-6 py-2 bg-orange-500 text-white rounded-full font-bold text-lg inline-block">
-                    Size: {{ result_size }}
-                </div>
+                <div class="mt-4 px-6 py-2 bg-orange-500 text-white rounded-full font-bold text-lg inline-block">Size: {{ result_size }}</div>
             </div>
-
-            <div class="p-4 bg-white/5 rounded-2xl border border-white/5 text-left">
-                <p class="text-orange-400 text-[10px] font-bold uppercase mb-1">AI Recommendation:</p>
-                <p class="text-slate-300 text-xs leading-relaxed italic">หาชุดที่ใส่แล้วโลกต้องจำ! ไซส์เสื้ออยู่ข้างบนแล้ว อย่าอ้างว่าซื้อผิดไซส์นะจ๊ะ 🤖✨</p>
-            </div>
-            
-            <button onclick="window.location='{{ url_for('index') }}'" class="w-full py-4 bg-slate-800 hover:bg-slate-700 rounded-2xl text-white text-xs font-bold uppercase tracking-widest">เก็บเป็นความลับสุดยอด</button>
+            <p class="text-slate-300 text-xs leading-relaxed italic">หาชุดที่ใส่แล้วโลกต้องจำ! ไซส์เสื้ออยู่ข้างบนแล้ว อย่าอ้างว่าซื้อผิดไซส์นะจ๊ะ 🤖✨</p>
+            <button onclick="window.location='{{ url_for('index') }}'" class="w-full py-4 bg-slate-800 hover:bg-slate-700 rounded-2xl text-white text-xs font-bold uppercase">เก็บเป็นความลับสุดยอด</button>
         </div>
     </div>
     {% endif %}
-
     <script>lucide.createIcons();</script>
 </body>
 </html>
@@ -182,7 +183,7 @@ def index():
 def admin():
     if not session.get("is_admin"): return render_template_string(HTML_TEMPLATE, page='login')
     data = load_data()
-    return render_template_string(HTML_TEMPLATE, names=data["names"], sizes=data.get("sizes", {}), assignments=data.get("assignments", {}), page='admin')
+    return render_template_string(HTML_TEMPLATE, names=data["names"], sizes=data.get("sizes", {}), assignments=data.get("assignments", {}), exclusions=data.get("exclusions", []), page='admin')
 
 @app.route("/admin_login", methods=["POST"])
 def admin_login():
@@ -190,6 +191,27 @@ def admin_login():
         session["is_admin"] = True
         return redirect(url_for("admin"))
     return "<script>alert('รหัสผิด!'); window.location='/admin';</script>"
+
+@app.route("/logout")
+def logout():
+    session.pop("is_admin", None)
+    return redirect(url_for("index"))
+
+@app.route("/add_exclusion", methods=["POST"])
+def add_exclusion():
+    p1, p2 = request.form.get("p1"), request.form.get("p2")
+    if p1 == p2: return "<script>alert('ชื่อซ้ำกัน!'); window.location='/admin';</script>"
+    data = load_data()
+    data["exclusions"].append([p1, p2])
+    save_data(data)
+    return redirect(url_for("admin"))
+
+@app.route("/del_exclusion/<int:idx>")
+def del_exclusion(idx):
+    data = load_data()
+    if 0 <= idx < len(data["exclusions"]): data["exclusions"].pop(idx)
+    save_data(data)
+    return redirect(url_for("admin"))
 
 @app.route("/draw", methods=["POST"])
 def draw():
@@ -203,8 +225,13 @@ def draw():
     assigned_receivers = list(data["assignments"].values())
     candidates = [n for n in data["names"] if n != user and n not in assigned_receivers]
     
+    # กรองคู่ห้าม (Exclusions)
+    for p1, p2 in data.get("exclusions", []):
+        if user == p1 and p2 in candidates: candidates.remove(p2)
+        if user == p2 and p1 in candidates: candidates.remove(p1)
+
     if not candidates:
-        return "<script>alert('ไม่มีใครเหลือให้สุ่มแล้ว!'); window.location='/';</script>"
+        return "<script>alert('ไม่มีใครเหลือให้สุ่มแล้ว หรือติดคู่ห้าม!'); window.location='/';</script>"
 
     target = random.choice(candidates)
     data["assignments"][user] = target
